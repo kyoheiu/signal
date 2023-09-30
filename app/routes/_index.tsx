@@ -1,41 +1,42 @@
-import type { MetaFunction } from "@remix-run/node";
+import {
+  redirect,
+  type ActionFunction,
+  type LoaderFunction,
+  type MetaFunction,
+} from "@remix-run/node";
+import { Form } from "@remix-run/react";
+import { destroySession, getSession } from "~/sessions.server";
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
-  ];
+  return [{ title: "signal" }];
+};
+
+export const loader: LoaderFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get("Cookie"));
+  if (session.has("token")) {
+    return true;
+  } else {
+    console.log("Cannot detect session: Will be redirected to /login");
+    return redirect("/login");
+  }
+};
+
+export let action: ActionFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get("Cookie"));
+  return redirect("/login", {
+    headers: {
+      "Set-Cookie": await destroySession(session),
+    },
+  });
 };
 
 export default function Index() {
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      <h1>Welcome to Remix</h1>
-      <ul>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/blog"
-            rel="noreferrer"
-          >
-            15m Quickstart Blog Tutorial
-          </a>
-        </li>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/jokes"
-            rel="noreferrer"
-          >
-            Deep Dive Jokes App Tutorial
-          </a>
-        </li>
-        <li>
-          <a target="_blank" href="https://remix.run/docs" rel="noreferrer">
-            Remix Docs
-          </a>
-        </li>
-      </ul>
-    </div>
+    <>
+      <div>Welcome!</div>
+      <Form method="post">
+        <button type="submit">Log out</button>
+      </Form>
+    </>
   );
 }
