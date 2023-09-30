@@ -6,6 +6,7 @@ import {
 } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 import { destroySession, getSession } from "~/sessions.server";
+import { verifyFirst } from "./cred";
 
 export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
@@ -13,8 +14,14 @@ export const meta: MetaFunction = () => {
 
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  if (session.has("token")) {
-    return true;
+  if (session.has("signal_first")) {
+    const token = session.get("signal_first");
+    console.log(token);
+    if (verifyFirst(token)) {
+      return null;
+    } else {
+      return redirect("/login");
+    }
   } else {
     console.log("Cannot detect session: Will be redirected to /login");
     return redirect("/login");
