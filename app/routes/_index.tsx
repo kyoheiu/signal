@@ -35,10 +35,22 @@ export let action: ActionFunction = async ({ request }) => {
 export default function Index() {
   return (
     <>
-      <div>Welcome!</div>
-      <Form method="post">
-        <button type="submit">Log out</button>
-      </Form>
+      <div className="flex flex-col items-center">
+        <div className="text-center text-3xl italic font-extrabold mb-8">
+          signal
+        </div>
+        <div className="text-center text-xl italic font-extrabold mb-4">
+          Welcome!
+        </div>
+        <Form method="post">
+          <button
+            type="submit"
+            className="rounded-full bg-neutral-600 px-4 py-1"
+          >
+            Log out
+          </button>
+        </Form>
+      </div>
     </>
   );
 }

@@ -22,7 +22,7 @@ export default function App() {
         <Meta />
         <Links />
       </head>
-      <body className="w-64 sm:w-96 mx-auto">
+      <body className="text-neutral-100 w-64 sm:w-96 mx-auto mt-8 bg-gradient-to-r from-cyan-500 to-blue-500">
         <Outlet />
         <ScrollRestoration />
         <Scripts />
