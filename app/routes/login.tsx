@@ -1,20 +1,23 @@
 import { LoaderFunction, redirect } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 import { commitSession, getSession } from "~/sessions.server";
-import { verifyFirst } from "./cred";
+import { FormEvent, useState } from "react";
+import png from "../../temp.png";
+import { verifyTOTPSession } from "./totp";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  if (session.has("signal_first")) {
-    const token = session.get("signal_first");
+  if (session.has("signal_session")) {
+    const token = session.get("signal_session");
     console.log(token);
-    if (verifyFirst(token)) {
-      return redirect("/totp", {
+    if (verifyTOTPSession(token)) {
+      return redirect("/", {
         headers: {
           "Set-Cookie": await commitSession(session),
         },
       });
     } else {
+      console.log("Invalid session.");
       session.flash("error", "Invalid credentials");
       return null;
     }
@@ -24,9 +27,47 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export default function logIn() {
+  const [credentialsVerified, setCredentialsVerified] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const res = await fetch("/cred", {
+      method: "POST",
+      body: formData,
+    });
+    if (res.ok) {
+      setCredentialsVerified(() => true);
+    }
+  };
+
+  if (credentialsVerified) {
+    return (
+      <>
+        <div>
+          <details>
+            <summary>Show QR code</summary>
+            <img src={png} />
+          </details>
+          After reading the code above on your authenticator app (such as Google
+          Authenticator), enter the number below.
+          <Form action="/otp" method="post" className="flex flex-col">
+            <input
+              className="border rounded"
+              type="text"
+              name="digit"
+              autoComplete="off"
+            />
+            <button type="submit">do it</button>
+          </Form>
+        </div>
+      </>
+    );
+  }
   return (
     <div>
-      <Form action="/cred" method="post" className="flex flex-col">
+      <Form method="post" onSubmit={handleSubmit} className="flex flex-col">
         <input
           className="border rounded"
           name="username"

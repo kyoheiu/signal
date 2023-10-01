@@ -3,7 +3,7 @@ import { createCookieSessionStorage } from "@remix-run/node";
 const { getSession, commitSession, destroySession } =
   createCookieSessionStorage({
     cookie: {
-      name: "signal_session",
+      name: "signal_first",
       path: "/",
       sameSite: "lax",
       httpOnly: true,
