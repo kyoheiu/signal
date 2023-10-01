@@ -17,14 +17,17 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
-export const validateCredentials = (username: string, password: string) => {
-  if (
-    username === process.env.SIGNAL_USERNAME &&
-    password === process.env.SIGNAL_PASSWORD
-  ) {
+export const validateCredentials = async (username: string, password: string) => {
+  try {
+    await authenticate({
+      ldapOpts: {url: process.env.SIGNAL_LDAP_URL as string},
+      userDn: username,
+      userPassword: password
+    });
     console.log("Credentials verified.");
     return true;
-  } else {
+  } catch (e) {
+    console.log(e);
     console.log("Invalid credentials.");
     return false;
   }
