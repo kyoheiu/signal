@@ -1,15 +1,13 @@
-import { ActionFunction } from "@remix-run/node";
-import jwt from "jsonwebtoken";
+import { ActionFunction, json } from "@remix-run/node";
+import { authenticate } from "ldap-authentication";
+import { encodeURI } from "js-base64";
 
 export const action: ActionFunction = async ({ request }) => {
-  const form = await request.formData();
-  const username = (form.get("username") as string) ?? "";
-  const password = (form.get("password") as string) ?? "";
+  const j = await request.json();
 
-  if (validateCredentials(username, password)) {
-    return new Response(null, {
-      status: 200,
-    });
+  if (await validateCredentials(j.dn, j.password)) {
+    const slug = encodeURI(j.dn);
+    return json({ to: `/otp/${slug}` });
   } else {
     return new Response("Invalid credentials.", {
       status: 400,
@@ -17,12 +15,12 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
-export const validateCredentials = async (username: string, password: string) => {
+export const validateCredentials = async (dn: string, password: string) => {
   try {
     await authenticate({
-      ldapOpts: {url: process.env.SIGNAL_LDAP_URL as string},
-      userDn: username,
-      userPassword: password
+      ldapOpts: { url: process.env.SIGNAL_LDAP_URL as string },
+      userDn: dn,
+      userPassword: password,
     });
     console.log("Credentials verified.");
     return true;

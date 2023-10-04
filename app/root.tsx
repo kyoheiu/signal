@@ -11,6 +11,7 @@ import stylesheet from "~/tailwind.css";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
+  { rel: "icon", href: "favicon.png" },
 ];
 
 export default function App() {

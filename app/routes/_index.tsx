@@ -7,6 +7,7 @@ import {
 import { Form } from "@remix-run/react";
 import { destroySession, getSession } from "~/sessions.server";
 import { verifyTOTPSession } from "./totp";
+import { Title } from "./Title";
 
 export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
@@ -15,7 +16,6 @@ export const meta: MetaFunction = () => {
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("signal_session");
-  console.log(`token is ${token}`);
   if (verifyTOTPSession(token)) {
     return null;
   } else {
@@ -36,9 +36,7 @@ export default function Index() {
   return (
     <>
       <div className="flex flex-col items-center">
-        <div className="text-center text-3xl italic font-extrabold mb-8">
-          signal
-        </div>
+        <Title />
         <div className="text-center text-xl italic font-extrabold mb-4">
           Welcome!
         </div>
