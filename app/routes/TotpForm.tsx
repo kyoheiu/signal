@@ -3,11 +3,9 @@ import { useState } from "react";
 import { SubmitButton } from "./SubmitButton";
 import { refAtom } from "./jotai";
 import { useAtom } from "jotai";
-import type { Hash } from "~/type";
 
 interface Props {
   dn: string | null;
-  secret: Hash;
 }
 
 export const TotpForm = (props: Props) => {
@@ -22,7 +20,7 @@ export const TotpForm = (props: Props) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ dn: props.dn, num: num, secret: props.secret }),
+      body: JSON.stringify({ dn: props.dn, num: num }),
     });
     if (res.ok) {
       if (ref) {

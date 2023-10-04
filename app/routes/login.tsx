@@ -23,8 +23,7 @@ export const meta: MetaFunction = () => {
 
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
-  const ref = url.searchParams.get("ref");
-  console.log(ref);
+  const ref: string | null = url.searchParams.get("ref");
 
   const session = await getSession(request.headers.get("Cookie"));
   if (session.has("signal_session")) {
@@ -32,8 +31,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     if (verifyTOTPSession(token)) {
       return redirect("/");
     } else {
-      console.log("Invalid session.");
-      session.flash("error", "Invalid credentials");
       return json({ ref: ref });
     }
   } else {

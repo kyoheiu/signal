@@ -46,24 +46,20 @@ export default function Otp() {
 
   if (!verified) {
     return;
-  } else if (data.firstTime) {
-    return (
-      <>
-        <div className="flex flex-col items-center">
-          <Title />
-          <qrcode.QRCodeSVG className="mb-6" value={data.uri} />
-          <ReadCode />
-          <TotpForm dn={dn} secret={data.secret} />
-        </div>
-      </>
-    );
   } else {
     return (
       <>
         <div className="flex flex-col items-center">
           <Title />
-          <EnterTotp />
-          <TotpForm dn={null} secret={data.secret} />
+          {data.uri ? (
+            <>
+              <qrcode.QRCodeSVG className="mb-6" value={data.uri} />
+              <ReadCode />
+            </>
+          ) : (
+            <EnterTotp />
+          )}
+          <TotpForm dn={dn} />
         </div>
       </>
     );

@@ -13,12 +13,52 @@ interface Register {
   secret: Hash;
 }
 
-interface State {
-  secret: Hash;
-  firstTime: boolean;
-}
+const JWT_SECRET = process.env.SIGNAL_JWT_SECRET as string;
 
-const SECRET = process.env.SIGNAL_JWT_SECRET as string;
+export const action: ActionFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get("Cookie"));
+  const j = await request.json();
+  const dn: string = j.dn;
+
+  const secret = await getSecretRegistered(dn);
+  if (secret) {
+    // If register already has the corresponding secret,
+    // just use it.
+    if (!validateTOTP(j.num, secret)) {
+      session.flash("error", "Invalid digit");
+      return redirect("/login");
+    }
+  } else {
+    // If register does not have the secret,
+    // read it from the temp file.
+    const secret = await getSecretTemp(dn);
+    if (!secret) {
+      return new Response(null, {
+        status: 400,
+      });
+    } else {
+      if (!validateTOTP(j.num, secret)) {
+        session.flash("error", "Invalid digit");
+        return redirect("/login");
+      }
+      // When validated, save it to .register (permanent).
+      await saveRegister(dn, secret, false);
+      // Delete temp file.
+      await fs.rm(tempFile(dn));
+      console.log("Removed temp file.");
+    }
+  }
+
+  // Set session cookie.
+  const token = jwt.sign({ totp: "verified" }, JWT_SECRET);
+  session.set("signal_session", token);
+
+  return new Response(null, {
+    headers: {
+      "Set-Cookie": await commitSession(session),
+    },
+  });
+};
 
 const createTOTP = (secret: string) =>
   new OTPAuth.TOTP({
@@ -29,72 +69,65 @@ const createTOTP = (secret: string) =>
     secret: secret,
   });
 
-export const action: ActionFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  const j = await request.json();
-  if (varidateTOTP(j.num, j.hash)) {
-    if (j.dn) {
-      await saveRegister(j.dn, j.hash, false);
-    }
-
-    // Set session cookie.
-    const token = jwt.sign({ totp: "verified" }, SECRET);
-    session.set("signal_session", token);
-
-    return new Response(null, {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
-  } else {
-    session.flash("error", "Invalid digit");
-    return redirect("/login");
-  }
-};
-
 export const loadSecret = async (dn: string) => {
-  const state = await getSecret(dn);
-
   let uri = undefined;
-  if (state?.firstTime) {
-    uri = generateUri(state.secret);
+
+  const secret = await getSecretRegistered(dn);
+  if (!secret) {
+    // If .register does not have corresponding secret,
+    // generate it and uri.
+    const secret: Hash = encrypt(generateToken());
+    // Save it to the temp file.
+    await saveRegister(dn, secret, true);
+    uri = generateUri(secret);
   }
 
+  // If uri is not undefined, it means you haven't registered the qrcode yet.
   const res = {
-    ...state,
     uri: uri,
   };
-  console.log(res);
   return json(res);
 };
 
-const getSecret = async (dn: string): Promise<State | null> => {
+const getSecretRegistered = async (dn: string): Promise<Hash | null> => {
   try {
     const reg = await fs.readFile("./.register", { encoding: "utf8" });
-    const lists: Register[] = JSON.parse(reg).list;
-    for (let i = 0; i < lists.length; i++) {
-      const row = lists[i];
+    const list: Register[] = JSON.parse(reg).list;
+    for (let i = 0; i < list.length; i++) {
+      const row = list[i];
       if (row.dn === dn) {
         console.log(`dn found: ${dn}`);
-        return { secret: row.secret, firstTime: false };
+        return row.secret;
       } else {
         continue;
       }
     }
 
-    // If dn is not found in regsiter, generate secret
-    const secret: Hash = encrypt(generateToken());
-    return { secret: secret, firstTime: true };
+    // If dn is not found in regsiter, just return null.
+    return null;
   } catch (e) {
-    const secret: Hash = encrypt(generateToken());
-    return { secret: secret, firstTime: true };
+    return null;
+  }
+};
+
+const getSecretTemp = async (dn: string): Promise<Hash | null> => {
+  try {
+    const temp = await fs.readFile(tempFile(dn), { encoding: "utf8" });
+    const list: Register[] = JSON.parse(temp).list;
+    if (list[0].dn === dn) {
+      return list[0].secret;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
   }
 };
 
 const generateUri = (secret: Hash): string => {
   let totp = createTOTP(decrypt(secret));
   let uri = totp.toString();
-  console.log("Generated uri.");
+  console.log(`Generated uri: ${uri}`);
   return uri;
 };
 
@@ -105,7 +138,7 @@ const generateToken = (): string => {
 
 export const verifyTOTPSession = (token: string) => {
   try {
-    jwt.verify(token, SECRET);
+    jwt.verify(token, JWT_SECRET);
     console.log("TOTP session verified.");
     return true;
   } catch (e) {
@@ -114,7 +147,7 @@ export const verifyTOTPSession = (token: string) => {
   }
 };
 
-export const varidateTOTP = (num: string, secret: Hash): boolean => {
+export const validateTOTP = (num: string, secret: Hash): boolean => {
   let totp = createTOTP(decrypt(secret));
   if (totp.validate({ token: num, window: 1 }) !== null) {
     console.log("TOTP verified.");
@@ -126,7 +159,7 @@ export const varidateTOTP = (num: string, secret: Hash): boolean => {
 };
 
 const saveRegister = async (dn: string, secret: Hash, temp: boolean) => {
-  const fileName = temp ? "./.temp" : "./.register";
+  const fileName = temp ? tempFile(dn) : "./.register";
 
   try {
     const reg = await fs.readFile(fileName, { encoding: "utf8" });
@@ -139,6 +172,8 @@ const saveRegister = async (dn: string, secret: Hash, temp: boolean) => {
       fileName,
       JSON.stringify({ list: [{ dn: dn, secret: secret }] }),
     );
-    console.log("Created register.");
+    console.log(temp ? "Created temp file." : "Created register.");
   }
 };
+
+const tempFile = (dn: string) => `./.temp_${dn}`;

@@ -26,7 +26,6 @@ export const validateCredentials = async (dn: string, password: string) => {
     return true;
   } catch (e) {
     console.log(e);
-    console.log("Invalid credentials.");
     return false;
   }
 };
