@@ -5,7 +5,12 @@ import { refAtom } from "./jotai";
 import { useAtom } from "jotai";
 import type { Hash } from "~/type";
 
-export const TotpForm = ({ hash }: { hash: Hash }) => {
+interface Props {
+  dn: string | null;
+  hash: Hash;
+}
+
+export const TotpForm = (props: Props) => {
   const navigate = useNavigate();
   const [num, setNum] = useState("");
   const [ref] = useAtom(refAtom);
@@ -17,7 +22,7 @@ export const TotpForm = ({ hash }: { hash: Hash }) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ num: num, hash: hash }),
+      body: JSON.stringify({ dn: props.dn, num: num, hash: props.hash }),
     });
     if (res.ok) {
       if (ref) {

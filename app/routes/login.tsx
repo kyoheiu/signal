@@ -7,7 +7,7 @@ import {
 import { Form, useLoaderData, useNavigate } from "@remix-run/react";
 import { getSession } from "~/sessions.server";
 import { verifyTOTPSession } from "./totp";
-import { refAtom, verifiedAtom } from "./jotai";
+import { dnAtom, refAtom, verifiedAtom } from "./jotai";
 import { useAtom } from "jotai";
 import { Title } from "./Title";
 import { SubmitButton } from "./SubmitButton";
@@ -50,7 +50,7 @@ export default function LogIn() {
   }
   const navigate = useNavigate();
   const [, setVerified] = useAtom(verifiedAtom);
-  const [dn, setDn] = useState("");
+  const [dn, setDn] = useAtom(dnAtom);
   const [password, setPassword] = useState("");
   const [warning, setWarning] = useState("");
 

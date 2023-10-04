@@ -1,7 +1,7 @@
 import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useAtom } from "jotai";
-import { verifiedAtom } from "./jotai";
+import { dnAtom, verifiedAtom } from "./jotai";
 import { loadSecret } from "./totp";
 import * as base64 from "js-base64";
 import * as qrcode from "qrcode.react";
@@ -10,6 +10,7 @@ import { Title } from "./Title";
 import { EnterTotp } from "./EnterTotp";
 import type { Hash } from "~/type";
 import { useEffect } from "react";
+import { ReadCode } from "./ReadCode";
 
 export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
@@ -34,6 +35,7 @@ export const loader: LoaderFunction = async ({ params }) => {
 export default function Otp() {
   const navigate = useNavigate();
   const data: Data = useLoaderData();
+  const [dn] = useAtom(dnAtom);
   const [verified] = useAtom(verifiedAtom);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function Otp() {
         <div className="flex flex-col items-center">
           <Title />
           <EnterTotp />
-          <TotpForm hash={data.secret} />
+          <TotpForm dn={null} hash={data.secret} />
         </div>
       </>
     );

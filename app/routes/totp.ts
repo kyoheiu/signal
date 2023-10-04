@@ -24,8 +24,26 @@ export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const j = await request.json();
   if (varidateTOTP(j.num, j.hash)) {
+    if (j.dn) {
+      try {
+        const reg = await fs.readFile("./.register", { encoding: "utf8" });
+        const lists: Register[] = JSON.parse(reg).list;
+        lists.push({ dn: encrypt(j.dn), secret: j.hash });
+        await fs.writeFile("./.register", JSON.stringify({ list: lists }));
+        console.log("Updated register.");
+      } catch (e) {
+        await fs.writeFile(
+          "./.register",
+          JSON.stringify({ list: [{ dn: encrypt(j.dn), secret: j.hash }] }),
+        );
+        console.log("Created register.");
+      }
+    }
+
+    // Set session cookie.
     const token = jwt.sign({ totp: "verified" }, SECRET);
     session.set("signal_session", token);
+
     return new Response(null, {
       headers: {
         "Set-Cookie": await commitSession(session),
@@ -68,16 +86,10 @@ const getSecret = async (dn: string): Promise<State | null> => {
     }
 
     // If dn is not found in regsiter, generate secret
-    const secret = encrypt(generateToken());
-    lists.push({ dn: encrypt(dn), secret: secret });
-    await fs.writeFile("./.register", JSON.stringify({ list: lists }));
+    const secret: Hash = encrypt(generateToken());
     return { secret: secret, firstTime: true };
   } catch (e) {
-    const secret = encrypt(generateToken());
-    await fs.writeFile(
-      "./.register",
-      JSON.stringify({ list: [{ dn: encrypt(dn), secret: secret }] }),
-    );
+    const secret: Hash = encrypt(generateToken());
     return { secret: secret, firstTime: true };
   }
 };
