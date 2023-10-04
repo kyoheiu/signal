@@ -1,5 +1,5 @@
 import type { LoaderFunction, MetaFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useAtom } from "jotai";
 import { verifiedAtom } from "./jotai";
 import { loadSecret } from "./totp";
@@ -9,6 +9,7 @@ import { TotpForm } from "./TotpForm";
 import { Title } from "./Title";
 import { EnterTotp } from "./EnterTotp";
 import type { Hash } from "~/type";
+import { useEffect } from "react";
 
 export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
@@ -31,8 +32,15 @@ export const loader: LoaderFunction = async ({ params }) => {
 };
 
 export default function Otp() {
+  const navigate = useNavigate();
   const data: Data = useLoaderData();
   const [verified] = useAtom(verifiedAtom);
+
+  useEffect(() => {
+    if (!verified) {
+      navigate("login");
+    }
+  });
 
   if (!verified) {
     return;
