@@ -49,10 +49,9 @@ export default function Otp() {
       <>
         <div className="flex flex-col items-center">
           <Title />
-          <qrcode.QRCodeSVG value={data.uri} />
-          Read this QR code by your favorite authenticator app.
-          <EnterTotp />
-          <TotpForm hash={data.secret} />
+          <qrcode.QRCodeSVG className="mb-6" value={data.uri} />
+          <ReadCode />
+          <TotpForm dn={dn} hash={data.secret} />
         </div>
       </>
     );
