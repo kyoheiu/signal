@@ -1,10 +1,14 @@
 import { Form, useNavigate } from "@remix-run/react";
 import { useState } from "react";
 import { SubmitButton } from "./SubmitButton";
+import { refAtom } from "./jotai";
+import { useAtom } from "jotai";
+import type { Hash } from "~/type";
 
 export const TotpForm = ({ hash }: { hash: Hash }) => {
   const navigate = useNavigate();
   const [num, setNum] = useState("");
+  const [ref] = useAtom(refAtom);
 
   const submitForm = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,7 +20,11 @@ export const TotpForm = ({ hash }: { hash: Hash }) => {
       body: JSON.stringify({ num: num, hash: hash }),
     });
     if (res.ok) {
-      navigate("/");
+      if (ref) {
+        window.location.href = ref;
+      } else {
+        navigate("/");
+      }
     } else {
       navigate("/login");
     }

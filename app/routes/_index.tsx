@@ -14,12 +14,18 @@ export const meta: MetaFunction = () => {
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
+  const url = new URL(request.url);
+  const ref = url.searchParams.get("ref");
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("signal_session");
   if (verifyTOTPSession(token)) {
     return null;
   } else {
-    return redirect("/login");
+    if (ref) {
+      return redirect(`/login?ref={ref}`);
+    } else {
+      return redirect("/login");
+    }
   }
 };
 

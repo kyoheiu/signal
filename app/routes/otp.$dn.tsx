@@ -1,4 +1,4 @@
-import { LoaderFunction, MetaFunction } from "@remix-run/node";
+import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { useAtom } from "jotai";
 import { verifiedAtom } from "./jotai";
@@ -8,6 +8,7 @@ import * as qrcode from "qrcode.react";
 import { TotpForm } from "./TotpForm";
 import { Title } from "./Title";
 import { EnterTotp } from "./EnterTotp";
+import type { Hash } from "~/type";
 
 export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
@@ -26,13 +27,12 @@ export const loader: LoaderFunction = async ({ params }) => {
     return null;
   }
   const j = await res.json();
-  console.log(j);
   return j;
 };
 
-export default function otp() {
+export default function Otp() {
   const data: Data = useLoaderData();
-  const [verified, setVerified] = useAtom(verifiedAtom);
+  const [verified] = useAtom(verifiedAtom);
 
   if (!verified) {
     return;

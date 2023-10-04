@@ -1,41 +1,55 @@
-import { LoaderFunction, MetaFunction, redirect } from "@remix-run/node";
-import { Form, useNavigate } from "@remix-run/react";
-import { commitSession, getSession } from "~/sessions.server";
+import {
+  type LoaderFunction,
+  type MetaFunction,
+  json,
+  redirect,
+} from "@remix-run/node";
+import { Form, useLoaderData, useNavigate } from "@remix-run/react";
+import { getSession } from "~/sessions.server";
 import { verifyTOTPSession } from "./totp";
-import { verifiedAtom } from "./jotai";
+import { refAtom, verifiedAtom } from "./jotai";
 import { useAtom } from "jotai";
 import { Title } from "./Title";
 import { SubmitButton } from "./SubmitButton";
 import { useState } from "react";
+
+interface Data {
+  ref: string | null;
+}
 
 export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
+  const url = new URL(request.url);
+  const ref = url.searchParams.get("ref");
+  console.log(ref);
+
   const session = await getSession(request.headers.get("Cookie"));
   if (session.has("signal_session")) {
     const token = session.get("signal_session");
-    console.log(token);
     if (verifyTOTPSession(token)) {
-      return redirect("/", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      return redirect("/");
     } else {
       console.log("Invalid session.");
       session.flash("error", "Invalid credentials");
-      return null;
+      return json({ ref: ref });
     }
   } else {
-    return null;
+    return json({ ref: ref });
   }
 };
 
-export default function logIn() {
+export default function LogIn() {
+  const data: Data = useLoaderData();
+  const [, setRef] = useAtom(refAtom);
+  if (data.ref) {
+    setRef(() => data.ref as string);
+    console.log(`ref set: ${data.ref}`);
+  }
   const navigate = useNavigate();
-  const [verified, setVerified] = useAtom(verifiedAtom);
+  const [, setVerified] = useAtom(verifiedAtom);
   const [dn, setDn] = useState("");
   const [password, setPassword] = useState("");
   const [warning, setWarning] = useState("");
@@ -52,7 +66,6 @@ export default function logIn() {
     if (res.ok) {
       setVerified(() => true);
       const j = await res.json();
-      console.log(j);
       navigate(j.to);
     } else {
       setWarning(() => "Incorrect dn or password.");
