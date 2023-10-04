@@ -1,4 +1,4 @@
-import { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction } from "@remix-run/node";
 import { getSession } from "~/sessions.server";
 import { verifyTOTPSession } from "./totp";
 

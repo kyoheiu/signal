@@ -1,12 +1,12 @@
 import jwt from "jsonwebtoken";
-import { ActionFunction, redirect } from "@remix-run/node";
+import { type ActionFunction, redirect, json } from "@remix-run/node";
 import { commitSession, getSession } from "~/sessions.server";
 import * as OTPAuth from "otpauth";
-import { json } from "@remix-run/node";
 import * as fs from "fs/promises";
 import * as crypto from "crypto";
 import { encrypt, decrypt } from "./crypt.js";
 import { base32 } from "rfc4648";
+import type { Hash } from "~/type.js";
 
 interface Register {
   dn: Hash;
@@ -25,7 +25,6 @@ export const action: ActionFunction = async ({ request }) => {
   const j = await request.json();
   if (varidateTOTP(j.num, j.hash)) {
     const token = jwt.sign({ totp: "verified" }, SECRET);
-    console.log(`new token is ${token}`);
     session.set("signal_session", token);
     return new Response(null, {
       headers: {
@@ -114,8 +113,6 @@ export const verifyTOTPSession = (token: string) => {
 };
 
 export const varidateTOTP = (num: string, hash: Hash): boolean => {
-  console.log(`num is ${num}`);
-  console.log(`hash is ${hash}`);
   let totp = new OTPAuth.TOTP({
     issuer: "ACME",
     label: "signal",

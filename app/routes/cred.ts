@@ -1,4 +1,4 @@
-import { ActionFunction, json } from "@remix-run/node";
+import { type ActionFunction, json } from "@remix-run/node";
 import { authenticate } from "ldap-authentication";
 import { encodeURI } from "js-base64";
 

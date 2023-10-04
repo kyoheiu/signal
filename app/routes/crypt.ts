@@ -1,4 +1,5 @@
 import * as crypto from "crypto";
+import type { Hash } from "~/type";
 
 const algorithm = "aes-256-ctr";
 const secretKey = crypto.scryptSync(
