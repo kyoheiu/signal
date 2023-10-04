@@ -9,7 +9,7 @@ import { base32 } from "rfc4648";
 import type { Hash } from "~/type.js";
 
 interface Register {
-  dn: Hash;
+  dn: string;
   secret: Hash;
 }
 
@@ -20,24 +20,21 @@ interface State {
 
 const SECRET = process.env.SIGNAL_JWT_SECRET as string;
 
+const createTOTP = (secret: string) =>
+  new OTPAuth.TOTP({
+    issuer: "signal",
+    algorithm: "SHA1",
+    digits: 6,
+    period: 30,
+    secret: secret,
+  });
+
 export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const j = await request.json();
   if (varidateTOTP(j.num, j.hash)) {
     if (j.dn) {
-      try {
-        const reg = await fs.readFile("./.register", { encoding: "utf8" });
-        const lists: Register[] = JSON.parse(reg).list;
-        lists.push({ dn: encrypt(j.dn), secret: j.hash });
-        await fs.writeFile("./.register", JSON.stringify({ list: lists }));
-        console.log("Updated register.");
-      } catch (e) {
-        await fs.writeFile(
-          "./.register",
-          JSON.stringify({ list: [{ dn: encrypt(j.dn), secret: j.hash }] }),
-        );
-        console.log("Created register.");
-      }
+      await saveRegister(j.dn, j.hash, false);
     }
 
     // Set session cookie.
@@ -77,7 +74,7 @@ const getSecret = async (dn: string): Promise<State | null> => {
     const lists: Register[] = JSON.parse(reg).list;
     for (let i = 0; i < lists.length; i++) {
       const row = lists[i];
-      if (decrypt(row.dn) === dn) {
+      if (row.dn === dn) {
         console.log(`dn found: ${dn}`);
         return { secret: row.secret, firstTime: false };
       } else {
@@ -94,22 +91,15 @@ const getSecret = async (dn: string): Promise<State | null> => {
   }
 };
 
-const generateUri = (hash: Hash): string => {
-  let totp = new OTPAuth.TOTP({
-    issuer: "ACME",
-    label: "signal",
-    algorithm: "SHA1",
-    digits: 6,
-    period: 30,
-    secret: decrypt(hash),
-  });
+const generateUri = (secret: Hash): string => {
+  let totp = createTOTP(decrypt(secret));
   let uri = totp.toString();
   console.log("Generated uri.");
   return uri;
 };
 
 const generateToken = (): string => {
-  const array = crypto.getRandomValues(new Uint32Array(8));
+  const array = crypto.getRandomValues(new Uint32Array(16));
   return base32.stringify(array, { pad: false });
 };
 
@@ -124,20 +114,31 @@ export const verifyTOTPSession = (token: string) => {
   }
 };
 
-export const varidateTOTP = (num: string, hash: Hash): boolean => {
-  let totp = new OTPAuth.TOTP({
-    issuer: "ACME",
-    label: "signal",
-    algorithm: "SHA1",
-    digits: 6,
-    period: 30,
-    secret: decrypt(hash),
-  });
+export const varidateTOTP = (num: string, secret: Hash): boolean => {
+  let totp = createTOTP(decrypt(secret));
   if (totp.validate({ token: num, window: 1 }) !== null) {
     console.log("TOTP verified.");
     return true;
   } else {
     console.log("Invalid TOTP.");
     return false;
+  }
+};
+
+const saveRegister = async (dn: string, secret: Hash, temp: boolean) => {
+  const fileName = temp ? "./.temp" : "./.register";
+
+  try {
+    const reg = await fs.readFile(fileName, { encoding: "utf8" });
+    const lists: Register[] = JSON.parse(reg).list;
+    lists.push({ dn: dn, secret: secret });
+    await fs.writeFile(fileName, JSON.stringify({ list: lists }));
+    console.log("Updated register.");
+  } catch (e) {
+    await fs.writeFile(
+      fileName,
+      JSON.stringify({ list: [{ dn: dn, secret: secret }] }),
+    );
+    console.log("Created register.");
   }
 };
