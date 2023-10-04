@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "remix build",
-    "fmt": "npx prettier . --write",
+    "fmt": "npx prettier . --write && npx eslint ./app",
     "dev": "remix dev --manual",
     "start": "remix-serve ./build/index.js",
     "typecheck": "tsc"
