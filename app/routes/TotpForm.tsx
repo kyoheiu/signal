@@ -7,7 +7,7 @@ import type { Hash } from "~/type";
 
 interface Props {
   dn: string | null;
-  hash: Hash;
+  secret: Hash;
 }
 
 export const TotpForm = (props: Props) => {
@@ -22,7 +22,7 @@ export const TotpForm = (props: Props) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ dn: props.dn, num: num, hash: props.hash }),
+      body: JSON.stringify({ dn: props.dn, num: num, secret: props.secret }),
     });
     if (res.ok) {
       if (ref) {

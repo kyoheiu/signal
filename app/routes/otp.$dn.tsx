@@ -53,7 +53,7 @@ export default function Otp() {
           <Title />
           <qrcode.QRCodeSVG className="mb-6" value={data.uri} />
           <ReadCode />
-          <TotpForm dn={dn} hash={data.secret} />
+          <TotpForm dn={dn} secret={data.secret} />
         </div>
       </>
     );
@@ -63,7 +63,7 @@ export default function Otp() {
         <div className="flex flex-col items-center">
           <Title />
           <EnterTotp />
-          <TotpForm dn={null} hash={data.secret} />
+          <TotpForm dn={null} secret={data.secret} />
         </div>
       </>
     );
