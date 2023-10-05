@@ -5,17 +5,21 @@ import { encodeURI } from "js-base64";
 export const action: ActionFunction = async ({ request }) => {
   const j = await request.json();
 
-  if (await validateCredentials(j.dn, j.password)) {
+  const result = await validateCredentials(j.dn, j.password);
+  if (result === true) {
     const slug = encodeURI(j.dn);
-    return json({ to: `/otp/${slug}` });
+    return json({ to: `/totp/${slug}` });
   } else {
-    return new Response("Invalid credentials.", {
+    return new Response(result as string, {
       status: 400,
     });
   }
 };
 
-export const validateCredentials = async (dn: string, password: string) => {
+export const validateCredentials = async (
+  dn: string,
+  password: string,
+): Promise<boolean | string> => {
   try {
     await authenticate({
       ldapOpts: { url: process.env.SIGNAL_LDAP_URL as string },
@@ -26,6 +30,6 @@ export const validateCredentials = async (dn: string, password: string) => {
     return true;
   } catch (e) {
     console.log(e);
-    return false;
+    return e as string;
   }
 };

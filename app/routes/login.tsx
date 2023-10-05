@@ -1,16 +1,9 @@
-import {
-  type LoaderFunction,
-  type MetaFunction,
-  json,
-  redirect,
-} from "@remix-run/node";
+import { type LoaderFunction, type MetaFunction, json } from "@remix-run/node";
 import { Form, useLoaderData, useNavigate } from "@remix-run/react";
-import { getSession } from "~/sessions.server";
-import { verifyTOTPSession } from "./totp";
-import { dnAtom, refAtom, verifiedAtom } from "./jotai";
+import { dnAtom, refAtom, verifiedAtom, warningAtom } from "../state/jotai";
 import { useAtom } from "jotai";
-import { Title } from "./Title";
-import { SubmitButton } from "./SubmitButton";
+import { Title } from "../component/Title";
+import { SubmitButton } from "../component/SubmitButton";
 import { useState } from "react";
 
 interface Data {
@@ -22,20 +15,10 @@ export const meta: MetaFunction = () => {
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
+  console.log("Loading /login ...");
   const url = new URL(request.url);
   const ref: string | null = url.searchParams.get("ref");
-
-  const session = await getSession(request.headers.get("Cookie"));
-  if (session.has("signal_session")) {
-    const token = session.get("signal_session");
-    if (verifyTOTPSession(token)) {
-      return redirect("/");
-    } else {
-      return json({ ref: ref });
-    }
-  } else {
-    return json({ ref: ref });
-  }
+  return json({ ref: ref });
 };
 
 export default function LogIn() {
@@ -49,7 +32,7 @@ export default function LogIn() {
   const [, setVerified] = useAtom(verifiedAtom);
   const [dn, setDn] = useAtom(dnAtom);
   const [password, setPassword] = useState("");
-  const [warning, setWarning] = useState("");
+  const [warning, setWarning] = useAtom(warningAtom);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,10 +45,12 @@ export default function LogIn() {
     });
     if (res.ok) {
       setVerified(() => true);
+      setWarning(() => "");
       const j = await res.json();
       navigate(j.to);
     } else {
-      setWarning(() => "Incorrect dn or password.");
+      const result = await res.text();
+      setWarning(() => result);
     }
   };
 

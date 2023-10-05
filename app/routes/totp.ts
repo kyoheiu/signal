@@ -1,12 +1,18 @@
 import jwt from "jsonwebtoken";
-import { type ActionFunction, redirect, json } from "@remix-run/node";
+import { type ActionFunction, json } from "@remix-run/node";
 import { commitSession, getSession } from "~/sessions.server";
 import * as OTPAuth from "otpauth";
 import * as fs from "fs/promises";
 import * as crypto from "crypto";
-import { encrypt, decrypt } from "./crypt.js";
+import { encrypt, decrypt } from "../server/crypt.js";
 import { base32 } from "rfc4648";
 import type { Hash } from "~/type.js";
+
+interface Req {
+  dn: string;
+  num: string;
+  ref: string | null;
+}
 
 interface Register {
   dn: string;
@@ -14,21 +20,25 @@ interface Register {
 }
 
 const JWT_SECRET = process.env.SIGNAL_JWT_SECRET as string;
+const REGISTER_PATH = "./data/.register";
 
 export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
-  const j = await request.json();
+  const j: Req = await request.json();
   const dn: string = j.dn;
 
   const secret = await getSecretRegistered(dn);
   if (secret) {
     // If register already has the corresponding secret,
     // just use it.
-    if (!validateTOTP(j.num, secret)) {
+    if (!validateTOTP(dn, j.num, secret)) {
       session.flash("error", "Invalid digit");
-      return redirect("/login");
+      return new Response(null, {
+        status: 400,
+      });
     }
   } else {
+    console.log("Reading temp file...");
     // If register does not have the secret,
     // read it from the temp file.
     const secret = await getSecretTemp(dn);
@@ -37,9 +47,14 @@ export const action: ActionFunction = async ({ request }) => {
         status: 400,
       });
     } else {
-      if (!validateTOTP(j.num, secret)) {
+      if (!validateTOTP(dn, j.num, secret)) {
+        // Delete temp file when not validated.
+        await fs.rm(tempFile(dn));
+        console.log("Removed temp file.");
         session.flash("error", "Invalid digit");
-        return redirect("/login");
+        return new Response(null, {
+          status: 400,
+        });
       }
       // When validated, save it to .register (permanent).
       await saveRegister(dn, secret, false);
@@ -60,9 +75,10 @@ export const action: ActionFunction = async ({ request }) => {
   });
 };
 
-const createTOTP = (secret: string) =>
+const createTOTP = (dn: string, secret: string) =>
   new OTPAuth.TOTP({
     issuer: "signal",
+    label: dn,
     algorithm: "SHA1",
     digits: 6,
     period: 30,
@@ -79,7 +95,7 @@ export const loadSecret = async (dn: string) => {
     const secret: Hash = encrypt(generateToken());
     // Save it to the temp file.
     await saveRegister(dn, secret, true);
-    uri = generateUri(secret);
+    uri = generateUri(dn, secret);
   }
 
   // If uri is not undefined, it means you haven't registered the qrcode yet.
@@ -91,7 +107,7 @@ export const loadSecret = async (dn: string) => {
 
 const getSecretRegistered = async (dn: string): Promise<Hash | null> => {
   try {
-    const reg = await fs.readFile("./.register", { encoding: "utf8" });
+    const reg = await fs.readFile(REGISTER_PATH, { encoding: "utf8" });
     const list: Register[] = JSON.parse(reg).list;
     for (let i = 0; i < list.length; i++) {
       const row = list[i];
@@ -124,8 +140,8 @@ const getSecretTemp = async (dn: string): Promise<Hash | null> => {
   }
 };
 
-const generateUri = (secret: Hash): string => {
-  let totp = createTOTP(decrypt(secret));
+const generateUri = (dn: string, secret: Hash): string => {
+  let totp = createTOTP(dn, decrypt(secret));
   let uri = totp.toString();
   console.log(`Generated uri: ${uri}`);
   return uri;
@@ -139,16 +155,20 @@ const generateToken = (): string => {
 export const verifyTOTPSession = (token: string) => {
   try {
     jwt.verify(token, JWT_SECRET);
-    console.log("TOTP session verified.");
+    console.log("Session verified.");
     return true;
   } catch (e) {
-    console.log(e);
+    console.log("Invalid session.");
     return false;
   }
 };
 
-export const validateTOTP = (num: string, secret: Hash): boolean => {
-  let totp = createTOTP(decrypt(secret));
+export const validateTOTP = (
+  dn: string,
+  num: string,
+  secret: Hash,
+): boolean => {
+  let totp = createTOTP(dn, decrypt(secret));
   if (totp.validate({ token: num, window: 1 }) !== null) {
     console.log("TOTP verified.");
     return true;
@@ -159,14 +179,15 @@ export const validateTOTP = (num: string, secret: Hash): boolean => {
 };
 
 const saveRegister = async (dn: string, secret: Hash, temp: boolean) => {
-  const fileName = temp ? tempFile(dn) : "./.register";
+  const fileName = temp ? tempFile(dn) : REGISTER_PATH;
 
   try {
+    await fs.mkdir("./data");
     const reg = await fs.readFile(fileName, { encoding: "utf8" });
     const lists: Register[] = JSON.parse(reg).list;
     lists.push({ dn: dn, secret: secret });
     await fs.writeFile(fileName, JSON.stringify({ list: lists }));
-    console.log("Updated register.");
+    console.log(temp ? "Updated temp file." : "Updated register.");
   } catch (e) {
     await fs.writeFile(
       fileName,
@@ -176,4 +197,4 @@ const saveRegister = async (dn: string, secret: Hash, temp: boolean) => {
   }
 };
 
-const tempFile = (dn: string) => `./.temp_${dn}`;
+const tempFile = (dn: string) => `./data/.temp_${dn}`;

@@ -7,13 +7,14 @@ import {
 import { Form } from "@remix-run/react";
 import { destroySession, getSession } from "~/sessions.server";
 import { verifyTOTPSession } from "./totp";
-import { Title } from "./Title";
+import { Title } from "../component/Title";
 
 export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
+  console.log("Loading index...");
   const url = new URL(request.url);
   const ref = url.searchParams.get("ref");
   const session = await getSession(request.headers.get("Cookie"));
@@ -21,17 +22,15 @@ export const loader: LoaderFunction = async ({ request }) => {
   if (verifyTOTPSession(token)) {
     return null;
   } else {
-    if (ref) {
-      return redirect(`/login?ref={ref}`);
-    } else {
-      return redirect("/login");
-    }
+    return redirect(ref ? `/login?ref=${ref}` : "/login");
   }
 };
 
 export let action: ActionFunction = async ({ request }) => {
+  const url = new URL(request.url);
+  const ref = url.searchParams.get("ref");
   const session = await getSession(request.headers.get("Cookie"));
-  return redirect("/login", {
+  return redirect(ref ? `/login?ref=${ref}` : "/login", {
     headers: {
       "Set-Cookie": await destroySession(session),
     },
