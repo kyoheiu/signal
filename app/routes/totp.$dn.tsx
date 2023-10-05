@@ -1,16 +1,16 @@
 import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useAtom } from "jotai";
-import { dnAtom, verifiedAtom } from "./jotai";
+import { dnAtom, verifiedAtom } from "../state/jotai";
 import { loadSecret } from "./totp";
 import * as base64 from "js-base64";
 import * as qrcode from "qrcode.react";
-import { TotpForm } from "./TotpForm";
-import { Title } from "./Title";
-import { EnterTotp } from "./EnterTotp";
+import { TotpForm } from "../component/TotpForm";
+import { Title } from "../component/Title";
+import { EnterTotp } from "../component/EnterTotp";
 import type { Hash } from "~/type";
 import { useEffect } from "react";
-import { ReadCode } from "./ReadCode";
+import { ReadCode } from "../component/ReadCode";
 
 export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
