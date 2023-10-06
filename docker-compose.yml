@@ -1,0 +1,26 @@
+version: '3'
+services:
+  carbon:
+    image: docker.io/kyoheiudev/signal:0.1.0
+    container_name: signal
+    volumes:
+      - '/path/to/data:/app/data:rw'
+    network_mode: ldap_network_name
+    environment:
+      # LDAP server url
+      - SIGNAL_LDAP_URL=ldap://localhost:3890
+      # your domain
+      - SIGNAL_DOMAIN=example.com
+      # key to encrypt the totp secret
+      - SIGNAL_SECRET=test
+      # salt for the totp secret
+      - SIGNAL_SALT=test
+      # key to sign JWT
+      - SIGNAL_JWT_SECRET=test
+    ports:
+      - 3000:3000
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: '3'
