@@ -1,10 +1,10 @@
-version: '3'
+version: "3"
 services:
   carbon:
     image: docker.io/kyoheiudev/signal:0.1.0
     container_name: signal
     volumes:
-      - '/path/to/data:/app/data:rw'
+      - "/path/to/data:/app/data:rw"
     network_mode: ldap_network_name
     environment:
       # LDAP server url
@@ -23,4 +23,4 @@ services:
       driver: json-file
       options:
         max-size: 1m
-        max-file: '3'
+        max-file: "3"
