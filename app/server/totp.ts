@@ -13,7 +13,6 @@ interface Register {
 }
 
 export const JWT_SECRET = process.env.SIGNAL_JWT_SECRET as string;
-const REGISTER_PATH = "./data/.register";
 
 const createTOTP = (dn: string, secret: string) =>
   new OTPAuth.TOTP({
@@ -47,13 +46,15 @@ export const loadSecret = async (dn: string) => {
 
 export const getSecretRegistered = async (dn: string): Promise<Hash | null> => {
   try {
-    const reg = await fs.readFile(REGISTER_PATH, { encoding: "utf8" });
-    const list: Register[] = JSON.parse(reg).list;
-    for (let i = 0; i < list.length; i++) {
-      const row = list[i];
-      if (row.dn === dn) {
+    const files = await fs.readdir("./data");
+    for (let i = 0; i < files.length; i++) {
+      if (files[i] === `.register_${dn}`) {
         console.log(`dn found: ${dn}`);
-        return row.secret;
+        const str = await fs.readFile(`./data/${files[i]}`, {
+          encoding: "utf8",
+        });
+        const reg: Register = JSON.parse(str);
+        return reg.secret;
       } else {
         continue;
       }
@@ -69,12 +70,8 @@ export const getSecretRegistered = async (dn: string): Promise<Hash | null> => {
 export const getSecretTemp = async (dn: string): Promise<Hash | null> => {
   try {
     const temp = await fs.readFile(tempFile(dn), { encoding: "utf8" });
-    const list: Register[] = JSON.parse(temp).list;
-    if (list[0].dn === dn) {
-      return list[0].secret;
-    } else {
-      return null;
-    }
+    const reg: Register = JSON.parse(temp);
+    return reg.secret;
   } catch (e) {
     return null;
   }
@@ -119,22 +116,12 @@ export const validateTOTP = (
 };
 
 export const saveRegister = async (dn: string, secret: Hash, temp: boolean) => {
-  const fileName = temp ? tempFile(dn) : REGISTER_PATH;
+  const fileName = temp ? tempFile(dn) : registerFile(dn);
 
-  try {
-    await fs.mkdir("./data");
-    const reg = await fs.readFile(fileName, { encoding: "utf8" });
-    const lists: Register[] = JSON.parse(reg).list;
-    lists.push({ dn: dn, secret: secret });
-    await fs.writeFile(fileName, JSON.stringify({ list: lists }));
-    console.log(temp ? "Updated temp file." : "Updated register.");
-  } catch (e) {
-    await fs.writeFile(
-      fileName,
-      JSON.stringify({ list: [{ dn: dn, secret: secret }] }),
-    );
-    console.log(temp ? "Created temp file." : "Created register.");
-  }
+  await fs.mkdir("./data", { recursive: true });
+  await fs.writeFile(fileName, JSON.stringify({ dn: dn, secret: secret }));
+  console.log(temp ? "Updated temp file." : "Updated register.");
 };
 
 export const tempFile = (dn: string) => `./data/.temp_${dn}`;
+const registerFile = (dn: string) => `./data/.register_${dn}`;
