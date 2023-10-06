@@ -5,8 +5,8 @@ import {
   type MetaFunction,
 } from "@remix-run/node";
 import { Form } from "@remix-run/react";
-import { destroySession, getSession } from "~/sessions.server";
-import { verifyTOTPSession } from "./totp";
+import { destroySession, getSession } from "../server/sessions";
+import { verifyTOTPSession } from "../server/totp";
 import { Title } from "../component/Title";
 
 export const meta: MetaFunction = () => {

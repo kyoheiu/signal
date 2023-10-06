@@ -2,7 +2,7 @@ import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useAtom } from "jotai";
 import { dnAtom, verifiedAtom } from "../state/jotai";
-import { loadSecret } from "./totp";
+import { loadSecret } from "../server/totp";
 import * as base64 from "js-base64";
 import * as qrcode from "qrcode.react";
 import { TotpForm } from "../component/TotpForm";
