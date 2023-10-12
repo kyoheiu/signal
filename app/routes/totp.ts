@@ -1,3 +1,5 @@
+// Validate TOTP code.
+
 import jwt from "jsonwebtoken";
 import { type ActionFunction } from "@remix-run/node";
 import { commitSession, getSession } from "../server/sessions";
@@ -8,7 +10,7 @@ import {
   getSecretTemp,
   saveRegister,
   tempFile,
-  validateTOTP,
+  validateTOTPCode,
 } from "~/server/totp";
 
 interface Req {
@@ -24,11 +26,12 @@ export const action: ActionFunction = async ({ request }) => {
 
   const secret = await getSecretRegistered(dn);
   if (secret) {
-    // If register already has the corresponding secret,
+    const result = validateTOTPCode(dn, j.num, secret);
+    // If the register file already has the corresponding secret,
     // just use it.
-    if (!validateTOTP(dn, j.num, secret)) {
-      session.flash("error", "Invalid digit");
-      return new Response(null, {
+    if (typeof result !== "boolean") {
+      session.flash("error", result);
+      return new Response(result, {
         status: 400,
       });
     }
@@ -42,12 +45,13 @@ export const action: ActionFunction = async ({ request }) => {
         status: 400,
       });
     } else {
-      if (!validateTOTP(dn, j.num, secret)) {
+      const result = validateTOTPCode(dn, j.num, secret);
+      if (typeof result !== "boolean") {
         // Delete temp file when not validated.
         await fs.rm(tempFile(dn));
         console.log("Removed temp file.");
-        session.flash("error", "Invalid digit");
-        return new Response(null, {
+        session.flash("error", result);
+        return new Response(result, {
           status: 400,
         });
       }
@@ -59,6 +63,7 @@ export const action: ActionFunction = async ({ request }) => {
     }
   }
 
+  // Happy path: After validated,
   // Set session cookie.
   const token = jwt.sign({ totp: "verified" }, JWT_SECRET);
   session.set("signal_session", token);

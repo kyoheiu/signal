@@ -31,7 +31,7 @@ export const loadSecret = async (dn: string) => {
   if (!secret) {
     // If .register does not have corresponding secret,
     // generate it and uri.
-    const secret: Hash = encrypt(generateToken());
+    const secret: Hash = encrypt(generateCode());
     // Save it to the temp file.
     await saveRegister(dn, secret, true);
     uri = generateUri(dn, secret);
@@ -84,7 +84,7 @@ const generateUri = (dn: string, secret: Hash): string => {
   return uri;
 };
 
-const generateToken = (): string => {
+const generateCode = (): string => {
   const array = crypto.getRandomValues(new Uint32Array(16));
   return base32.stringify(array, { pad: false });
 };
@@ -100,18 +100,19 @@ export const verifyTOTPSession = (token: string) => {
   }
 };
 
-export const validateTOTP = (
+export const validateTOTPCode = (
   dn: string,
   num: string,
   secret: Hash,
-): boolean => {
+): boolean | string => {
   let totp = createTOTP(dn, decrypt(secret));
-  if (totp.validate({ token: num, window: 1 }) !== null) {
-    console.log("TOTP verified.");
-    return true;
+  if (totp.validate({ token: num, window: 1 }) === null) {
+    const message = "Invalid code.";
+    console.log(message);
+    return message;
   } else {
-    console.log("Invalid TOTP.");
-    return false;
+    console.log("Code verified.");
+    return true;
   }
 };
 
