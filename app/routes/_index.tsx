@@ -15,23 +15,21 @@ export const meta: MetaFunction = () => {
 
 // Check if already logged in.
 export const loader: LoaderFunction = async ({ request }) => {
-  console.log("Loading index...");
   const url = new URL(request.url);
   const ref = url.searchParams.get("ref");
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("signal_session");
-  if (verifyTOTPSession(token)) {
-    return null;
-  } else {
+  if (!verifyTOTPSession(token)) {
     return redirect(ref ? `/login?ref=${ref}` : "/login");
+  } else {
+    return null;
   }
 };
 
+// Destroy session and log out.
 export let action: ActionFunction = async ({ request }) => {
-  const url = new URL(request.url);
-  const ref = url.searchParams.get("ref");
   const session = await getSession(request.headers.get("Cookie"));
-  return redirect(ref ? `/login?ref=${ref}` : "/login", {
+  return redirect("/login", {
     headers: {
       "Set-Cookie": await destroySession(session),
     },
