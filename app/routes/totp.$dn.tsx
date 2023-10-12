@@ -1,3 +1,5 @@
+// Second step: TOTP authentication
+
 import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useAtom } from "jotai";

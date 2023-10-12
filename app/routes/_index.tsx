@@ -13,6 +13,7 @@ export const meta: MetaFunction = () => {
   return [{ title: "signal" }];
 };
 
+// Check if already logged in.
 export const loader: LoaderFunction = async ({ request }) => {
   console.log("Loading index...");
   const url = new URL(request.url);

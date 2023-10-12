@@ -2,6 +2,7 @@ import type { LoaderFunction } from "@remix-run/node";
 import { getSession } from "../server/sessions";
 import { verifyTOTPSession } from "../server/totp";
 
+// Check if already logged in.
 export const loader: LoaderFunction = async ({ request }) => {
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("signal_session");
