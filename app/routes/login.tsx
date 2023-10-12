@@ -1,10 +1,13 @@
+// First authentication: LDAP
+
 import { type LoaderFunction, type MetaFunction, json } from "@remix-run/node";
 import { Form, useLoaderData, useNavigate } from "@remix-run/react";
-import { dnAtom, refAtom, verifiedAtom, warningAtom } from "../state/jotai";
+import { dnAtom, refAtom, verifiedAtom, warningCredAtom } from "../state/jotai";
 import { useAtom } from "jotai";
 import { Title } from "../component/Title";
 import { SubmitButton } from "../component/SubmitButton";
 import { useState } from "react";
+import { Warning } from "~/component/Warning";
 
 interface Data {
   ref: string | null;
@@ -32,7 +35,7 @@ export default function LogIn() {
   const [, setVerified] = useAtom(verifiedAtom);
   const [dn, setDn] = useAtom(dnAtom);
   const [password, setPassword] = useState("");
-  const [warning, setWarning] = useAtom(warningAtom);
+  const [warningCred, setWarningCred] = useAtom(warningCredAtom);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,18 +48,19 @@ export default function LogIn() {
     });
     if (res.ok) {
       setVerified(() => true);
-      setWarning(() => "");
+      setWarningCred(() => "");
       const j = await res.json();
       navigate(j.to);
     } else {
       const result = await res.text();
-      setWarning(() => result);
+      setWarningCred(() => result);
     }
   };
 
   return (
     <div>
       <Title />
+      <Warning warning={warningCred} />
       <Form
         method="post"
         onSubmit={handleSubmit}
@@ -78,11 +82,6 @@ export default function LogIn() {
           type="password"
           placeholder="Password"
         />
-        {warning && (
-          <div className="bg-neutral-100 text-red-600 mb-6 px-2 py-1">
-            {warning}
-          </div>
-        )}
         <SubmitButton />
       </Form>
     </div>
