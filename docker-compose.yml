@@ -1,10 +1,11 @@
 version: "3"
 services:
-  carbon:
-    image: docker.io/kyoheiudev/signal:0.1.0
+  signal:
+    image: docker.io/kyoheiudev/signal
     container_name: signal
     volumes:
       - "/path/to/data:/app/data:rw"
+    # if you need it
     network_mode: ldap_network_name
     environment:
       # LDAP server url
