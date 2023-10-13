@@ -10,7 +10,6 @@ import * as qrcode from "qrcode.react";
 import { TotpForm } from "../component/TotpForm";
 import { Title } from "../component/Title";
 import { EnterTotp } from "../component/EnterTotp";
-import type { Hash } from "~/type";
 import { useEffect } from "react";
 import { ReadCode } from "../component/ReadCode";
 
@@ -19,8 +18,6 @@ export const meta: MetaFunction = () => {
 };
 
 interface Data {
-  secret: Hash;
-  firstTime: boolean;
   uri: string;
 }
 
@@ -46,24 +43,20 @@ export default function Otp() {
     }
   });
 
-  if (!verified) {
-    return;
-  } else {
-    return (
-      <>
-        <div className="flex flex-col items-center">
-          <Title />
-          {data.uri ? (
-            <>
-              <qrcode.QRCodeSVG className="mb-6" value={data.uri} />
-              <ReadCode />
-            </>
-          ) : (
-            <EnterTotp />
-          )}
-          <TotpForm dn={dn} />
-        </div>
-      </>
-    );
-  }
+  return (
+    <>
+      <div className="flex flex-col items-center">
+        <Title />
+        {data.uri ? (
+          <>
+            <qrcode.QRCodeSVG className="mb-6" value={data.uri} />
+            <ReadCode />
+          </>
+        ) : (
+          <EnterTotp />
+        )}
+        <TotpForm dn={dn} />
+      </div>
+    </>
+  );
 }
