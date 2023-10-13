@@ -1,5 +1,7 @@
 # signal
 
+![screenshot.png](./screenshot.jpg)
+
 Simple 2fA authentication server.
 - 1st step: LDAP authentication
 - 2nd step: TOTP authentication
