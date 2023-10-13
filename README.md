@@ -1,11 +1,13 @@
 # signal
 
-![screenshot.png](./screenshot.jpg)
+![screenshot.jpg](./images/screenshot.jpg)
 
 Simple 2fA authentication server.
 - 1st step: LDAP authentication
 - 2nd step: TOTP authentication
   - TOTP auth has the rate limiting feature: After 5 failed attempts in a minute, the client will have to wait for the next login attempt.
+
+![swimlanes.png](./images/swimlanes.png)
 
 ## Prerequisites
 
