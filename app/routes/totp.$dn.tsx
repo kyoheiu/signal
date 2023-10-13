@@ -42,7 +42,7 @@ export default function Otp() {
 
   useEffect(() => {
     if (!verified) {
-      navigate("login");
+      navigate("/login");
     }
   });
 
