@@ -26,7 +26,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   const secret = await getSecretRegistered(dn);
   if (secret) {
-    const result = validateTOTPCode(dn, j.num, secret);
+    const result = await validateTOTPCode(dn, j.num, secret);
     // If the register file already has the corresponding secret,
     // just use it.
     if (typeof result !== "boolean") {
@@ -45,7 +45,7 @@ export const action: ActionFunction = async ({ request }) => {
         status: 400,
       });
     } else {
-      const result = validateTOTPCode(dn, j.num, secret);
+      const result = await validateTOTPCode(dn, j.num, secret);
       if (typeof result !== "boolean") {
         // Delete temp file when not validated.
         await fs.rm(tempFile(dn));

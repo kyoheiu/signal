@@ -6,6 +6,7 @@ import { encrypt, decrypt } from "../server/crypt.js";
 import { base32 } from "rfc4648";
 import type { Hash } from "~/type.js";
 import { json } from "@remix-run/node";
+import { rateLimited, storeFailedAttempt } from "./rateLimit.js";
 
 interface Register {
   dn: string;
@@ -100,15 +101,20 @@ export const verifyTOTPSession = (token: string) => {
   }
 };
 
-export const validateTOTPCode = (
+export const validateTOTPCode = async (
   dn: string,
   num: string,
   secret: Hash,
-): boolean | string => {
+): Promise<boolean | string> => {
+  if (await rateLimited(dn)) {
+    const message = "Rate limited: Wait a moment.";
+    return message;
+  }
   let totp = createTOTP(dn, decrypt(secret));
   if (totp.validate({ token: num, window: 1 }) === null) {
     const message = "Invalid code.";
     console.log(message);
+    await storeFailedAttempt(dn);
     return message;
   } else {
     console.log("Code verified.");
