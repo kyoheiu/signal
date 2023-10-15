@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 
 const LIMIT_TIME = 60000; // 1 minute
+const MAX_ATTEMPT = 5;
 const RATE_LIMIT_PATH = "./data/.rate_limit";
 
 interface FailedAttempt {
@@ -17,7 +18,7 @@ export const rateLimited = async (dn: string) => {
   const filtered = failedAttempts.filter(
     (attempt) => attempt.dn === dn && attempt.time > now - LIMIT_TIME,
   );
-  if (filtered.length < 5) {
+  if (filtered.length < MAX_ATTEMPT) {
     console.log(`${filtered.length} failed attempts within a minute so far.`);
     return false;
   } else {
