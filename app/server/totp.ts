@@ -6,12 +6,14 @@ import { encrypt, decrypt } from "../server/crypt.js";
 import { base32 } from "rfc4648";
 import type { Hash } from "~/type.js";
 import { json } from "@remix-run/node";
-import { rateLimited, storeFailedAttempt } from "./rateLimit.js";
+import { rateLimited, writeFailedAttempt } from "./rateLimit.js";
 
 interface Register {
   dn: string;
   secret: Hash;
 }
+
+type Success = "success";
 
 export const JWT_SECRET = process.env.SIGNAL_JWT_SECRET as string;
 
@@ -105,7 +107,7 @@ export const validateTOTPCode = async (
   dn: string,
   num: string,
   secret: Hash,
-): Promise<boolean | string> => {
+): Promise<Success | string> => {
   if (await rateLimited(dn)) {
     const message = "Rate limited: Wait a moment.";
     return message;
@@ -114,11 +116,11 @@ export const validateTOTPCode = async (
   if (totp.validate({ token: num, window: 1 }) === null) {
     const message = "Invalid code.";
     console.log(message);
-    await storeFailedAttempt(dn);
+    await writeFailedAttempt(dn);
     return message;
   } else {
     console.log("Code verified.");
-    return true;
+    return "success";
   }
 };
 
