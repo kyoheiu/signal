@@ -27,7 +27,7 @@ export const rateLimited = async (dn: string) => {
   }
 };
 
-export const storeFailedAttempt = async (dn: string) => {
+export const writeFailedAttempt = async (dn: string) => {
   let failedAttempts = await readFailedAttempt();
   const now = Date.now();
   const attempt = { dn: dn, time: now };
