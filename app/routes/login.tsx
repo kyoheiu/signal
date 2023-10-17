@@ -2,7 +2,7 @@
 
 import { type LoaderFunction, type MetaFunction, json } from "@remix-run/node";
 import { Form, useLoaderData, useNavigate } from "@remix-run/react";
-import { dnAtom, refAtom, verifiedAtom, warningCredAtom } from "../state/jotai";
+import { verifiedDnAtom, refAtom, warningCredAtom } from "../state/jotai";
 import { useAtom } from "jotai";
 import { Title } from "../component/Title";
 import { SubmitButton } from "../component/SubmitButton";
@@ -32,8 +32,8 @@ export default function LogIn() {
     console.log(`ref set: ${data.ref}`);
   }
   const navigate = useNavigate();
-  const [, setVerified] = useAtom(verifiedAtom);
-  const [dn, setDn] = useAtom(dnAtom);
+  const [dn, setDn] = useState("");
+  const [, setVerifiedDn] = useAtom(verifiedDnAtom);
   const [password, setPassword] = useState("");
   const [warningCred, setWarningCred] = useAtom(warningCredAtom);
 
@@ -47,8 +47,8 @@ export default function LogIn() {
       body: JSON.stringify({ dn: dn, password: password }),
     });
     if (res.ok) {
-      setVerified(() => true);
       setWarningCred(() => "");
+      setVerifiedDn(() => dn);
       const j = await res.json();
       navigate(j.to);
     } else {

@@ -3,7 +3,7 @@
 import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useAtom } from "jotai";
-import { dnAtom, verifiedAtom } from "../state/jotai";
+import { verifiedDnAtom } from "../state/jotai";
 import { loadSecret } from "../server/totp";
 import * as base64 from "js-base64";
 import * as qrcode from "qrcode.react";
@@ -19,26 +19,26 @@ export const meta: MetaFunction = () => {
 
 interface Data {
   uri: string;
+  param: string;
 }
 
 export const loader: LoaderFunction = async ({ params }) => {
-  const dn = base64.decode(params.dn as string);
-  const res = await loadSecret(dn as string);
+  const dnParam = base64.decode(params.dn as string);
+  const res = await loadSecret(dnParam as string);
   if (!res.ok) {
     return null;
   }
   const j = await res.json();
-  return j;
+  return { ...j, param: dnParam };
 };
 
 export default function Otp() {
   const navigate = useNavigate();
   const data: Data = useLoaderData();
-  const [dn] = useAtom(dnAtom);
-  const [verified] = useAtom(verifiedAtom);
+  const [verifiedDn] = useAtom(verifiedDnAtom);
 
   useEffect(() => {
-    if (!verified) {
+    if (!verifiedDn || data.param !== verifiedDn) {
       navigate("/login");
     }
   });
@@ -55,7 +55,7 @@ export default function Otp() {
         ) : (
           <EnterTotp />
         )}
-        <TotpForm dn={dn} />
+        <TotpForm dn={verifiedDn} />
       </div>
     </>
   );
