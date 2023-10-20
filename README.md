@@ -85,3 +85,6 @@ services:
        return 302 https://signal.domain.com?ref=$scheme://$http_host$request_uri;
    }
    ```
+
+### Re-register the QR code
+There is no way to re-register via the frontend. Delete `.register_${dn}` file in your `data` directory, and signal will show a new QR code again.
